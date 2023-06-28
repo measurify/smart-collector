@@ -8,16 +8,6 @@ import 'package:quick_blue/quick_blue.dart';
 
 import 'PeripheralDetailPage.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:async';
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
-import 'package:quick_blue/quick_blue.dart';
-import 'package:permission_handler/permission_handler.dart';
-
-import 'PeripheralDetailPage.dart';
 void main() {
   runApp(MyApp());
 }
