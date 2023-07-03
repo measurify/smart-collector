@@ -1,3 +1,4 @@
+//NO MORE USED
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -126,11 +127,10 @@ String uint8ListToHex(Uint8List value) {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => startPage( deviceId:widget.deviceId,
-                 serviceId:widget.serviceId,)),
-              );
+              //Navigator.push(
+               // context,
+               // MaterialPageRoute(builder: (context) => startPage( globals:widget.globals)),
+              //);
             },
             child: Text('Go to Other Page'),
           ),

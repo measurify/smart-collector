@@ -3,8 +3,11 @@ import 'dart:typed_data';
 import 'package:convert/convert.dart';
 import 'package:flutter/material.dart';
 import 'package:quick_blue/quick_blue.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'startPage.dart';
 import 'CharacteristicDetailPage.dart';
+import 'globals.dart';
 
 String gssUuid(String code) => '0000$code-0000-1000-8000-00805f9b34fb';
 
@@ -31,12 +34,16 @@ class PeripheralDetailPage extends StatefulWidget {
 }
 
 class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
+  Globals globals=Globals();
   @override
   void initState() {
     super.initState();
+    globals.deviceId = widget.deviceId;
     QuickBlue.setConnectionHandler(_handleConnectionChange);
     QuickBlue.setServiceHandler(_handleServiceDiscovery);
     QuickBlue.setValueHandler(_handleValueChange);
+    
+    loadConfigVariables();
   }
 
   @override
@@ -46,6 +53,12 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
     QuickBlue.setServiceHandler(null);
     QuickBlue.setConnectionHandler(null);
   }
+
+   // Retrieve configuration variables from SharedPreferences
+  Future<void> loadConfigVariables() async {
+    globals.prefs = await SharedPreferences.getInstance();
+  }
+  
 
   void _handleConnectionChange(String deviceId, BlueConnectionState state) {
     print('_handleConnectionChange $deviceId, $state');
@@ -67,12 +80,13 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
 
   void _handleValueChange(
       String deviceId, String characteristicId, Uint8List value) {
-    print('_handleValueChange $deviceId, $characteristicId, ${hex.encode(value)}');
+    print(
+        '_handleValueChange $deviceId, $characteristicId, ${hex.encode(value)}');
   }
 
   final serviceUUID = TextEditingController(text: WOODEMI_SERV__COMMAND);
   final characteristicUUID =
-  TextEditingController(text: WOODEMI_CHAR__COMMAND_REQUEST);
+      TextEditingController(text: WOODEMI_CHAR__COMMAND_REQUEST);
   final binaryCode = TextEditingController(
       text: hex.encode([0x01, 0x0A, 0x00, 0x00, 0x00, 0x01]));
 
@@ -105,14 +119,31 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               ElevatedButton(
+                child: Text('Go to uploading page'),
+                onPressed: () {
+                  QuickBlue.discoverServices(globals.deviceId);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => startPage(globals:globals),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          /*Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              ElevatedButton(
                 child: Text('discoverServices'),
                 onPressed: () {
                   QuickBlue.discoverServices(widget.deviceId);
                 },
               ),
             ],
-          ),
-          Expanded(
+          ),*/
+          /*Expanded(
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: services.length,
@@ -141,7 +172,7 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
                 );
               },
             ),
-          ),
+          ),*/
         ],
       ),
     );
