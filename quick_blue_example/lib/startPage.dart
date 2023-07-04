@@ -12,7 +12,7 @@ import 'default.dart';
 
 class startPage extends StatefulWidget {
   final Globals globals;
-  startPage({required this.globals});
+  startPage({required this.globals});//global variables
 
   @override
   _startPageState createState() => _startPageState();
@@ -21,15 +21,14 @@ class startPage extends StatefulWidget {
 class _startPageState extends State<startPage> {
   Defaults defaults = Defaults();
 
-  TextEditingController _measureNameController = TextEditingController();
+  TextEditingController _measureNameController = TextEditingController();//input taken by last value saved
 
   @override
   void initState() {
     super.initState();
     loadConfigVariables(); // Load configuration variables from SharedPreferences
     // Initialize QuickBlue value handler to handle value changes for the characteristic
-    QuickBlue.setValueHandler(_handleValueChange);
-    
+    QuickBlue.setValueHandler(_handleValueChange);    
   }
 
   @override
@@ -74,16 +73,16 @@ class _startPageState extends State<startPage> {
         widget.globals.prefs.getString('orientationCharacteristicId') ??
             defaults.orientationCharacteristicId;
 
-    String? receivedJsonValuesString =
-        widget.globals.prefs.getString('receivedJsonValues');
-    widget.globals.receivedJsonValues = receivedJsonValuesString != null
-        ? jsonDecode(receivedJsonValuesString)
+    String? receivedIMUJsonValuesString =
+        widget.globals.prefs.getString('receivedIMUJsonValues');
+    widget.globals.receivedIMUJsonValues = receivedIMUJsonValuesString != null
+        ? jsonDecode(receivedIMUJsonValuesString)
         : [];
 
     _measureNameController.text = widget.globals.measureName;
   }
 
-  // Save configuration variables to SharedPreferences
+  // Save configuration variables to SharedPreferences (Not used)
   Future<void> saveConfigVariables() async {
     await widget.globals.prefs
         .setBool('isCollecting', widget.globals.isCollecting);
@@ -91,50 +90,30 @@ class _startPageState extends State<startPage> {
     await widget.globals.prefs.setBool('option2', widget.globals.option2);
     await widget.globals.prefs.setBool('option3', widget.globals.option3);
     await widget.globals.prefs
-        .setString('measureName', widget.globals.measureName ?? '');
+        .setString('measureName', widget.globals.measureName);
     await widget.globals.prefs.setInt('savedValue', widget.globals.savedValue);
     await widget.globals.prefs.setString(
-        'receivedJsonValues', jsonEncode(widget.globals.receivedJsonValues));
+        'receivedIMUJsonValues', jsonEncode(widget.globals.receivedIMUJsonValues));
   }
 
-//When a characteristic change he read the value and decode it
-  void _handleValueChange(
-      String deviceId, String characteristicId, Uint8List value) {
-    List<double> floatValues = List<double>.filled(9, 0.0);
-    if (characteristicId == "8e7c2dae-0002-4b0d-b516-f525649c49ca") {
-      //IMU
-      List<int> intValues = parseIMUData(value, 9);
-      for (int i = 0; i < intValues.length; i++) {
-        //conversion imu from int to float
-        if (i < 3) {
-          floatValues[i] = intValues[i] / 8192;
-        } else if (i < 6) {
-          floatValues[i] = intValues[i] / 16.384;
-        } else {
-          floatValues[i] = intValues[i] / 81.92;
-        }
-      }
-      Map<String, dynamic> jsonObj = {
-        "timestamp": DateTime.now().millisecondsSinceEpoch,
-        "values": floatValues,
-      };
-      //To visualize jsonObj
-      //String jsonDataString = jsonEncode(jsonObj);
-      //print(jsonDataString);
-
-      //print(floatValues);
-
-      // Add the parsed IMU data to the receivedValues list
-      setState(() {
-        widget.globals.savedValue++;
-        widget.globals.receivedJsonValues.add(jsonObj);
-      });
+  //When a characteristic change he read the value and decode it
+  void _handleValueChange(String deviceId, String characteristicId, Uint8List value) {
+    if (characteristicId == "8e7c2dae-0002-4b0d-b516-f525649c49ca") {//IMU
+      Map<String, dynamic> jsonObj = parseIMUData(value, 9);  
+      setState(() {// Add the parsed data to the receivedValues list of the specific characteristic
+        widget.globals.receivedIMUJsonValues.add(jsonObj);
+      });    
+      
     }
+    setState(() {
+        widget.globals.savedValue++;
+    });
   }
 
-  List<int> parseIMUData(Uint8List value, int ArrayLength) {
+  Map<String, dynamic> parseIMUData(Uint8List value, int ArrayLength) {//convert the IMU data back to float and create the json object
     final byteData = ByteData.view(value.buffer);
     final imuData = List<int>.filled(ArrayLength, 0);
+    List<double> floatValues = List<double>.filled(9, 0.0);
     for (var i = 0; i < imuData.length; i++) {
       if (i < value.lengthInBytes ~/ 2) {
         int intValue = byteData.getInt16(i * 2, Endian.little);
@@ -142,8 +121,25 @@ class _startPageState extends State<startPage> {
         print("intValue:" + intValue.toString());
       }
     }
-
-    return imuData;
+    for (int i = 0; i < imuData.length; i++) {
+      //conversion IMU from int to float
+      if (i < 3) {
+        floatValues[i] = imuData[i] / 8192;
+      } else if (i < 6) {
+        floatValues[i] = imuData[i] / 16.384;
+      } else {
+        floatValues[i] = imuData[i] / 81.92;
+      }
+    }
+    Map<String, dynamic> jsonObj = {
+        "timestamp": DateTime.now().millisecondsSinceEpoch,
+        "values": floatValues,
+      };
+      //To visualize jsonObj
+      //String jsonDataString = jsonEncode(jsonObj);
+      //print(jsonDataString);
+      //print(floatValues);
+    return jsonObj;
   }
 
   void toggleCollecting() {
@@ -154,7 +150,7 @@ class _startPageState extends State<startPage> {
 
   Future<void> sendData() async {
     print("Sending data to " + widget.globals.measureName.toString());
-    String jsonDataString = jsonEncode(widget.globals.receivedJsonValues);
+    String jsonDataString = jsonEncode(widget.globals.receivedIMUJsonValues);
     print(jsonDataString);
     var headers = {
       'Content-Type': 'application/json',
@@ -171,6 +167,7 @@ class _startPageState extends State<startPage> {
 
     if (response.statusCode == 200) {
       print(await response.stream.bytesToString());
+      widget.globals.receivedIMUJsonValues=[];//reset
     } else {
       print(response.reasonPhrase);
     }
@@ -215,6 +212,7 @@ class _startPageState extends State<startPage> {
               onSubmitted: (value) {
                 widget.globals.prefs
                     .setString('measureName', widget.globals.measureName);
+                  print("saved measureName on sharedPreferences");
               },
             ),
             SizedBox(height: 16.0),
@@ -267,8 +265,8 @@ class _startPageState extends State<startPage> {
                   toggleCollecting();
                   // Handle button press
                   if (widget.globals.option1) {
-                    print(widget.globals.bleServiceId);
                     if (widget.globals.isCollecting) {
+                      checkMeasureExist();
                       QuickBlue.setNotifiable(
                         widget.globals.deviceId,
                         widget.globals.bleServiceId,
@@ -282,8 +280,9 @@ class _startPageState extends State<startPage> {
                         widget.globals.imuCharacteristicId,
                         BleInputProperty.disabled,
                       );
-                      //sendData(); //TO DO to send data
+                      sendData(); //TO DO to send data
                     }
+                    
                   }
                 }
               },
@@ -298,5 +297,55 @@ class _startPageState extends State<startPage> {
         child: Text('Values saved: ' + widget.globals.savedValue.toString()),
       ),
     );
+  }
+
+  void checkMeasureExist() async{
+    var headers = {
+      'Content-Type': 'application/json',
+      'Authorization': widget.globals.deviceToken
+    };
+    var request = http.Request('GET', Uri.parse(widget.globals.url+widget.globals.measureName));    
+    request.headers.addAll(headers);
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      print(await response.stream.bytesToString());
+    }
+    else {
+      print(response.reasonPhrase);    
+      postMeasure();
+    }
+  }
+
+  void postMeasure() async{
+    var headers = {
+      'Content-Type': 'application/json',
+      'Authorization': widget.globals.deviceToken
+    };
+    var request = http.Request('POST', Uri.parse(widget.globals.url));
+    request.body = json.encode({
+      "_id": widget.globals.measureName,
+      "thing":widget.globals.thingName,
+      "feature": "IMU",
+      "device": widget.globals.deviceName,
+      "tags": ["IMU"],
+      "visibility": "public"
+    });
+    request.headers.addAll(headers);
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      print(await response.stream.bytesToString());
+    }
+    else {
+      print(response.toString());
+      final snackBar = SnackBar(
+        content: Text(response.reasonPhrase!),
+      );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }
   }
 }

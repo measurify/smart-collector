@@ -11,7 +11,7 @@ class Globals {
   String measureName = '';
   int savedValue = 0;
   List<List<double>> receivedValues = [];
-  List<Map<String, dynamic>> receivedJsonValues = [];
+  List<Map<String, dynamic>> receivedIMUJsonValues = [];
   String url = '';
   String tenantId = '';
   String deviceToken = '';

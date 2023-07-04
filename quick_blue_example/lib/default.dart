@@ -7,7 +7,7 @@ class Defaults {
   String measureName = '';
   int savedValue = 0;
   List<List<double>> receivedValues = [];
-  List<Map<String, dynamic>> receivedJsonValues = [];
+  List<Map<String, dynamic>> receivedIMUJsonValues = [];
   String url = 'https://students.measurify.org/v1/measurements/';
   String tenantId = 'activity-tracker-tenant';
   String deviceToken = 'DVC eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkZXZpY2UiOnsiX2lkIjoidGVzdCIsImZlYXR1cmVzIjpbIklNVSJdLCJ0aGluZ3MiOlsidGVzdCJdLCJvd25lciI6IjY0NGI5Y2IxNTUxNDZhMDAxZTg2YmZkOCJ9LCJ0ZW5hbnQiOnsicGFzc3dvcmRoYXNoIjp0cnVlLCJfaWQiOiJhY3Rpdml0eS10cmFja2VyLXRlbmFudCIsIm9yZ2FuaXphdGlvbiI6Ik1lYXN1cmlmeSBvcmciLCJhZGRyZXNzIjoiTWVhc3VyaWZ5IFN0cmVldCwgR2Vub3ZhIiwiZW1haWwiOiJpbmZvQG1lYXN1cmlmeS5vcmciLCJwaG9uZSI6IiszOTEwMzIxODc5MzgxNyIsImRhdGFiYXNlIjoiYWN0aXZpdHktdHJhY2tlci10ZW5hbnQifSwiaWF0IjoxNjg4MDUxNDM1LCJleHAiOjMzMjQ1NjUxNDM1fQ.HCcoI8bscnthxx0Jxn6YQDydAJwA8k-eHFpceWEyD2I';
