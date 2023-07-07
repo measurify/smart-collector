@@ -28,7 +28,7 @@ class _MyAppState extends State<MyApp> {
     }
     _subscription = QuickBlue.scanResultStream.listen((result) {
       if (!_scanResults.any((r) => r.deviceId == result.deviceId)) {
-        setState(() => _scanResults.add(result));
+        if(result.name!=""){setState(() => _scanResults.add(result));}
       }
     });
   }
