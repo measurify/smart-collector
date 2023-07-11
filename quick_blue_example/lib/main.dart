@@ -26,6 +26,7 @@ class _MyAppState extends State<MyApp> {
     if (kDebugMode) {
       QuickBlue.setLogger(Logger('quick_blue_example'));
     }
+    //search for devices and choice only the device with a name
     _subscription = QuickBlue.scanResultStream.listen((result) {
       if (!_scanResults.any((r) => r.deviceId == result.deviceId)) {
         if(result.name!=""){setState(() => _scanResults.add(result));}
@@ -110,6 +111,7 @@ class _MyAppState extends State<MyApp> {
       ),
     );
   }
+  //button to set permission
   Widget _buildPermissionWarning() {
     return FutureBuilder<bool>(
       future: _hasBluetoothPermission(),

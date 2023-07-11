@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'globals.dart';
-import 'dart:convert';
 
 class ConfigPage extends StatefulWidget {
   final Globals globals;
    ConfigPage({
-    required this.globals
+    required this.globals //required
   });
 
   @override
@@ -14,7 +12,7 @@ class ConfigPage extends StatefulWidget {
 }
 
 class _ConfigPageState extends State<ConfigPage> {
-
+  //input controllers
   TextEditingController _urlEditingController = TextEditingController();
   TextEditingController _tenantIdEditingController = TextEditingController();
   TextEditingController _deviceTokenEditingController = TextEditingController();
@@ -28,10 +26,11 @@ class _ConfigPageState extends State<ConfigPage> {
   @override
   void initState() {
     super.initState();
-    loadPreferences();
+    initializeTextControllers();
   }
 
-  Future<void> loadPreferences() async {  
+  //initialize Text controllers
+  Future<void> initializeTextControllers() async {  
     _urlEditingController.text = widget.globals.url;
     _tenantIdEditingController.text = widget.globals.tenantId;
     _deviceTokenEditingController.text = widget.globals.deviceToken;
@@ -43,6 +42,7 @@ class _ConfigPageState extends State<ConfigPage> {
     _orientationCharacteristicIdEditingController.text = widget.globals.orientationCharacteristicId;
   }
 
+  //for save button update the shared preferences
   Future<void> saveSharedPreferences() async {
     await widget.globals.prefs.setString('url', widget.globals.url);
     await widget.globals.prefs.setString('tenantId', widget.globals.tenantId);
@@ -195,6 +195,7 @@ class _ConfigPageState extends State<ConfigPage> {
     );
   }
 
+  //reset all the values to default. [CHECK FOR MISSING]
   Future<void> resetConfigVariables() async {
     await widget.globals.prefs.setBool('isCollecting', defaults.isCollecting);
     await widget.globals.prefs.setBool('option1', defaults.option1);
@@ -212,7 +213,57 @@ class _ConfigPageState extends State<ConfigPage> {
     await widget.globals.prefs.setString('envCharacteristicId', defaults.envCharacteristicId);
     await widget.globals.prefs.setString('orientationCharacteristicId', defaults.orientationCharacteristicId);
 
-    String receivedIMUJsonValuesString = jsonEncode(defaults.receivedIMUJsonValues);
-    await widget.globals.prefs.setString('receivedIMUJsonValues', receivedIMUJsonValuesString);
+    
+    //String receivedIMUJsonValuesString = jsonEncode(defaults.receivedIMUJsonValues);
+    //await widget.globals.prefs.setString('receivedIMUJsonValues', receivedIMUJsonValuesString);
+
+    //update the globals variables
+    loadConfigVariables();
+    
+  }
+
+  // Retrieve configuration variables from SharedPreferences
+  Future<void> loadConfigVariables() async {
+    widget.globals.isCollecting =
+        widget.globals.prefs.getBool('isCollecting') ?? defaults.isCollecting;
+    widget.globals.option1 =
+        widget.globals.prefs.getBool('option1') ?? defaults.option1;
+    widget.globals.option2 =
+        widget.globals.prefs.getBool('option2') ?? defaults.option2;
+    widget.globals.option3 =
+        widget.globals.prefs.getBool('option3') ?? defaults.option3;
+    widget.globals.measureName =
+        widget.globals.prefs.getString('measureName') ?? defaults.measureName;
+    widget.globals.savedValue =
+        widget.globals.prefs.getInt('savedValue') ?? defaults.savedValue;
+    widget.globals.url = widget.globals.prefs.getString('url') ?? defaults.url;
+    widget.globals.tenantId =
+        widget.globals.prefs.getString('tenantId') ?? defaults.tenantId;
+    widget.globals.deviceToken =
+        widget.globals.prefs.getString('deviceToken') ?? defaults.deviceToken;
+    widget.globals.bleServiceId =
+        widget.globals.prefs.getString('bleServiceId') ?? defaults.bleServiceId;
+    widget.globals.thingName =
+        widget.globals.prefs.getString('thingName') ?? defaults.thingName;
+    widget.globals.deviceName =
+        widget.globals.prefs.getString('deviceName') ?? defaults.deviceName;
+    widget.globals.imuCharacteristicId =
+        widget.globals.prefs.getString('imuCharacteristicId') ??
+            defaults.imuCharacteristicId;
+    widget.globals.envCharacteristicId =
+        widget.globals.prefs.getString('envCharacteristicId') ??
+            defaults.envCharacteristicId;
+    widget.globals.orientationCharacteristicId =
+        widget.globals.prefs.getString('orientationCharacteristicId') ??
+            defaults.orientationCharacteristicId;
+
+    
+    widget.globals.receivedIMUJsonValues=[];//TO DO save saved values not posted.
+    //String? receivedIMUJsonValuesString =widget.globals.prefs.getString('receivedIMUJsonValues');
+    //widget.globals.receivedIMUJsonValues = receivedIMUJsonValuesString != null
+       // ? jsonDecode(receivedIMUJsonValuesString)
+       // : [];
+    
+
   }
 }

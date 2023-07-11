@@ -5,28 +5,30 @@ import 'dart:typed_data';
 
 import 'package:quick_blue/quick_blue.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'configPage.dart';
 import 'globals.dart';
 import 'default.dart';
 
 class startPage extends StatefulWidget {
   final Globals globals;
-  startPage({required this.globals});//global variables
+  startPage({required this.globals});//required Global variables
 
   @override
   _startPageState createState() => _startPageState();
 }
 
 class _startPageState extends State<startPage> {
-  Defaults defaults = Defaults();
+  //Create an object of type Defaults that contains default configuration values 
+  Defaults defaults = Defaults(); 
 
-  TextEditingController _measureNameController = TextEditingController();//input taken by last value saved
+  //Input controller for Name of the measurement
+  TextEditingController _measureNameController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    loadConfigVariables(); // Load configuration variables from SharedPreferences
+    // Load configuration variables from SharedPreferences
+    loadConfigVariables(); 
     // Initialize QuickBlue value handler to handle value changes for the characteristic
     QuickBlue.setValueHandler(_handleValueChange);    
   }
@@ -73,16 +75,19 @@ class _startPageState extends State<startPage> {
         widget.globals.prefs.getString('orientationCharacteristicId') ??
             defaults.orientationCharacteristicId;
 
-    String? receivedIMUJsonValuesString =
-        widget.globals.prefs.getString('receivedIMUJsonValues');
-    widget.globals.receivedIMUJsonValues = receivedIMUJsonValuesString != null
-        ? jsonDecode(receivedIMUJsonValuesString)
-        : [];
+    
+    widget.globals.receivedIMUJsonValues=[];//TO DO save saved values not posted.
+    //String? receivedIMUJsonValuesString =widget.globals.prefs.getString('receivedIMUJsonValues');
+    //widget.globals.receivedIMUJsonValues = receivedIMUJsonValuesString != null
+       // ? jsonDecode(receivedIMUJsonValuesString)
+       // : [];
+    
 
+    //inizialize the input name as that saved from shared preferences
     _measureNameController.text = widget.globals.measureName;
   }
 
-  // Save configuration variables to SharedPreferences (Not used)
+  //Save configuration variables to SharedPreferences (Not used for now)
   Future<void> saveConfigVariables() async {
     await widget.globals.prefs
         .setBool('isCollecting', widget.globals.isCollecting);
@@ -96,21 +101,23 @@ class _startPageState extends State<startPage> {
         'receivedIMUJsonValues', jsonEncode(widget.globals.receivedIMUJsonValues));
   }
 
-  //When a characteristic change he read the value and decode it
+  //When a characteristic change he read the value and decode it and save into different variables
   void _handleValueChange(String deviceId, String characteristicId, Uint8List value) {
     if (characteristicId == "8e7c2dae-0002-4b0d-b516-f525649c49ca") {//IMU
       Map<String, dynamic> jsonObj = parseIMUData(value, 9);  
       setState(() {// Add the parsed data to the receivedValues list of the specific characteristic
         widget.globals.receivedIMUJsonValues.add(jsonObj);
-      });    
-      
+      });          
     }
+    //MISSING ENV AND ORIENTATION CHARACTERISTICS
+
     setState(() {
         widget.globals.savedValue++;
     });
   }
 
-  Map<String, dynamic> parseIMUData(Uint8List value, int ArrayLength) {//convert the IMU data back to float and create the json object
+  //convert the IMU data 9 int16 array back to float and create the json object ready to be sended
+  Map<String, dynamic> parseIMUData(Uint8List value, int ArrayLength) {
     final byteData = ByteData.view(value.buffer);
     final imuData = List<int>.filled(ArrayLength, 0);
     List<double> floatValues = List<double>.filled(9, 0.0);
@@ -142,12 +149,15 @@ class _startPageState extends State<startPage> {
     return jsonObj;
   }
 
+  //to start and stop collecting data, toggle isCollecting variable
   void toggleCollecting() {
     setState(() {
       widget.globals.isCollecting = !widget.globals.isCollecting;
     });
   }
 
+  //send data to server using measureName (WORKS ONLY WITH IMU)
+  //ERROR KNOWN If i create one measurement with that name I can't send more characteristic but only one, or I have to add _IMU at the end of the measure 
   Future<void> sendData() async {
     print("Sending data to " + widget.globals.measureName.toString());
     String jsonDataString = jsonEncode(widget.globals.receivedIMUJsonValues);
@@ -168,7 +178,13 @@ class _startPageState extends State<startPage> {
     if (response.statusCode == 200) {
       print(await response.stream.bytesToString());
       widget.globals.receivedIMUJsonValues=[];//reset
+      ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Values sended correctly!")),
+      );
     } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(response.reasonPhrase!)),
+      );
       print(response.reasonPhrase);
     }
   }
@@ -198,6 +214,13 @@ class _startPageState extends State<startPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+             Text(
+              'Insert name of the measurement:',
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             TextField(
               onChanged: (value) {
                 // Handle text input changes
@@ -263,9 +286,10 @@ class _startPageState extends State<startPage> {
                   );
                 } else {
                   toggleCollecting();
-                  // Handle button press
+                  // Handle button press                  
                   if (widget.globals.option1) {
                     if (widget.globals.isCollecting) {
+                      //create the measurement and start notification
                       checkMeasureExist();
                       QuickBlue.setNotifiable(
                         widget.globals.deviceId,
@@ -274,15 +298,16 @@ class _startPageState extends State<startPage> {
                         BleInputProperty.notification,
                       );
                     } else {
+                      //stop notification and send data
                       QuickBlue.setNotifiable(
                         widget.globals.deviceId,
                         widget.globals.bleServiceId,
                         widget.globals.imuCharacteristicId,
                         BleInputProperty.disabled,
                       );
-                      sendData(); //TO DO to send data
-                    }
-                    
+                      //send data (WORKS ONLY FOR IMU)
+                      sendData(); 
+                    }                    
                   }
                 }
               },
@@ -299,6 +324,7 @@ class _startPageState extends State<startPage> {
     );
   }
 
+  //Check if exist a measure with that name //TO DO if exist check that the feature is the same of option selected
   void checkMeasureExist() async{
     var headers = {
       'Content-Type': 'application/json',
@@ -313,11 +339,13 @@ class _startPageState extends State<startPage> {
       print(await response.stream.bytesToString());
     }
     else {
-      print(response.reasonPhrase);    
+      print(response.reasonPhrase); 
+      //Create it //MAYBE MANAGE BETTER ERRORS.   
       postMeasure();
     }
   }
 
+  //Create measurement to save data
   void postMeasure() async{
     var headers = {
       'Content-Type': 'application/json',

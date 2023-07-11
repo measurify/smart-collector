@@ -6,7 +6,6 @@ import 'package:quick_blue/quick_blue.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'startPage.dart';
-import 'CharacteristicDetailPage.dart';
 import 'globals.dart';
 
 String gssUuid(String code) => '0000$code-0000-1000-8000-00805f9b34fb';
@@ -34,7 +33,9 @@ class PeripheralDetailPage extends StatefulWidget {
 }
 
 class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
+  //create here an object of type globals that contains all the variables and need to be exchanged between pages
   Globals globals=Globals();
+
   @override
   void initState() {
     super.initState();
@@ -43,7 +44,8 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
     QuickBlue.setServiceHandler(_handleServiceDiscovery);
     QuickBlue.setValueHandler(_handleValueChange);
     
-    loadConfigVariables();
+    //inizialize shared preferences used also when you close the app and open it again
+    createSharedPreferences();
   }
 
   @override
@@ -55,7 +57,7 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
   }
 
    // Retrieve configuration variables from SharedPreferences
-  Future<void> loadConfigVariables() async {
+  Future<void> createSharedPreferences() async {
     globals.prefs = await SharedPreferences.getInstance();
   }
   
@@ -98,7 +100,7 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
       ),
       body: Column(
         children: [
-          Row(
+          Row( //connect and disconnect buttons
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               ElevatedButton(
@@ -115,7 +117,7 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
               ),
             ],
           ),
-          Row(
+          Row( //go to the startPage page trasmitting globals.
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               ElevatedButton(
@@ -177,7 +179,7 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
       ),
     );
   }
-
+  /*
   String getCharacteristicProperties(String characteristicId) {
     if (characteristicId == WOODEMI_CHAR__COMMAND_REQUEST) {
       return 'Properties: Write';
@@ -186,8 +188,8 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
     } else {
       return 'Properties: Unknown';
     }
-  }
-
+  }*/
+  /*
   void handleCharacteristicTap(String serviceId, String characteristicId) {
     Navigator.push(
       context,
@@ -199,5 +201,5 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
         ),
       ),
     );
-  }
+  }*/
 }
