@@ -11,15 +11,21 @@ import 'default.dart';
 
 class startPage extends StatefulWidget {
   final Globals globals;
-  startPage({required this.globals});//required Global variables
+  startPage({required this.globals}); //required Global variables
 
   @override
   _startPageState createState() => _startPageState();
 }
 
 class _startPageState extends State<startPage> {
-  //Create an object of type Defaults that contains default configuration values 
-  Defaults defaults = Defaults(); 
+  //Create an object of type Defaults that contains default configuration values
+  Defaults defaults = Defaults();
+
+  List<String> sportsList = [];
+  List<String> actionsList = [];
+
+  String _selectedOption1 = "";
+  String _selectedOption2 = "";
 
   //Input controller for Name of the measurement
   TextEditingController _measureNameController = TextEditingController();
@@ -28,9 +34,13 @@ class _startPageState extends State<startPage> {
   void initState() {
     super.initState();
     // Load configuration variables from SharedPreferences
-    loadConfigVariables(); 
+    loadConfigVariables();
+
+    // Call the function to get tags
+    fetchTags();
+
     // Initialize QuickBlue value handler to handle value changes for the characteristic
-    QuickBlue.setValueHandler(_handleValueChange);    
+    QuickBlue.setValueHandler(_handleValueChange);
   }
 
   @override
@@ -38,6 +48,22 @@ class _startPageState extends State<startPage> {
     super.dispose();
     // Clear QuickBlue value handler
     QuickBlue.setValueHandler(null);
+  }
+
+  // Function to fetch activity tags
+  void fetchTags() async {
+    List<String> tags = await getActivityTags();
+    setState(() {
+      // Update the sportsList with the fetched tags
+      sportsList = tags;
+      _selectedOption1 = sportsList[0];
+    });
+    List<String> tags2 = await getActionTags();
+    setState(() {
+      // Update the sportsList with the fetched tags
+      actionsList = tags2;
+      _selectedOption2 = actionsList[0];
+    });
   }
 
   // Retrieve configuration variables from SharedPreferences
@@ -75,13 +101,12 @@ class _startPageState extends State<startPage> {
         widget.globals.prefs.getString('orientationCharacteristicId') ??
             defaults.orientationCharacteristicId;
 
-    
-    widget.globals.receivedIMUJsonValues=[];//TO DO save saved values not posted.
+    widget.globals.receivedIMUJsonValues =
+        []; //TO DO save saved values not posted.
     //String? receivedIMUJsonValuesString =widget.globals.prefs.getString('receivedIMUJsonValues');
     //widget.globals.receivedIMUJsonValues = receivedIMUJsonValuesString != null
-       // ? jsonDecode(receivedIMUJsonValuesString)
-       // : [];
-    
+    // ? jsonDecode(receivedIMUJsonValuesString)
+    // : [];
 
     //inizialize the input name as that saved from shared preferences
     _measureNameController.text = widget.globals.measureName;
@@ -97,22 +122,25 @@ class _startPageState extends State<startPage> {
     await widget.globals.prefs
         .setString('measureName', widget.globals.measureName);
     await widget.globals.prefs.setInt('savedValue', widget.globals.savedValue);
-    await widget.globals.prefs.setString(
-        'receivedIMUJsonValues', jsonEncode(widget.globals.receivedIMUJsonValues));
+    await widget.globals.prefs.setString('receivedIMUJsonValues',
+        jsonEncode(widget.globals.receivedIMUJsonValues));
   }
 
   //When a characteristic change he read the value and decode it and save into different variables
-  void _handleValueChange(String deviceId, String characteristicId, Uint8List value) {
-    if (characteristicId == "8e7c2dae-0002-4b0d-b516-f525649c49ca") {//IMU
-      Map<String, dynamic> jsonObj = parseIMUData(value, 9);  
-      setState(() {// Add the parsed data to the receivedValues list of the specific characteristic
+  void _handleValueChange(
+      String deviceId, String characteristicId, Uint8List value) {
+    if (characteristicId == "8e7c2dae-0002-4b0d-b516-f525649c49ca") {
+      //IMU
+      Map<String, dynamic> jsonObj = parseIMUData(value, 9);
+      setState(() {
+        // Add the parsed data to the receivedValues list of the specific characteristic
         widget.globals.receivedIMUJsonValues.add(jsonObj);
-      });          
+      });
     }
     //MISSING ENV AND ORIENTATION CHARACTERISTICS
 
     setState(() {
-        widget.globals.savedValue++;
+      widget.globals.savedValue++;
     });
   }
 
@@ -139,13 +167,13 @@ class _startPageState extends State<startPage> {
       }
     }
     Map<String, dynamic> jsonObj = {
-        "timestamp": DateTime.now().millisecondsSinceEpoch,
-        "values": floatValues,
-      };
-      //To visualize jsonObj
-      //String jsonDataString = jsonEncode(jsonObj);
-      //print(jsonDataString);
-      //print(floatValues);
+      "timestamp": DateTime.now().millisecondsSinceEpoch,
+      "values": floatValues,
+    };
+    //To visualize jsonObj
+    //String jsonDataString = jsonEncode(jsonObj);
+    //print(jsonDataString);
+    //print(floatValues);
     return jsonObj;
   }
 
@@ -157,7 +185,7 @@ class _startPageState extends State<startPage> {
   }
 
   //send data to server using measureName (WORKS ONLY WITH IMU)
-  //ERROR KNOWN If i create one measurement with that name I can't send more characteristic but only one, or I have to add _IMU at the end of the measure 
+  //ERROR KNOWN If i create one measurement with that name I can't send more characteristic but only one, or I have to add _IMU at the end of the measure
   Future<void> sendData() async {
     print("Sending data to " + widget.globals.measureName.toString());
     String jsonDataString = jsonEncode(widget.globals.receivedIMUJsonValues);
@@ -168,8 +196,10 @@ class _startPageState extends State<startPage> {
     };
     var request = http.Request(
         'POST',
-        Uri.parse(
-            widget.globals.url + widget.globals.measureName + '/timeserie'));
+        Uri.parse(widget.globals.url +
+            "measurements/" +
+            widget.globals.measureName +
+            '/timeserie'));
     request.body = jsonDataString;
     request.headers.addAll(headers);
 
@@ -177,16 +207,68 @@ class _startPageState extends State<startPage> {
 
     if (response.statusCode == 200) {
       print(await response.stream.bytesToString());
-      widget.globals.receivedIMUJsonValues=[];//reset
+      widget.globals.receivedIMUJsonValues = []; //reset
       ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Values sended correctly!")),
+        SnackBar(content: Text("Values sended correctly!")),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(response.reasonPhrase!)),
+        SnackBar(content: Text(response.reasonPhrase!)),
       );
       print(response.reasonPhrase);
     }
+  }
+
+  //Get all tags
+  Future<List<String>> getActivityTags() async {
+    List<String> activityTags = [];
+    var headers = {'Authorization': widget.globals.deviceToken};
+    var request = http.Request(
+        'GET',
+        Uri.parse(
+            'https://students.measurify.org/v1/tags?filter={"tags": "Activity"}&sort={ "timestamp": "asc" }'));
+
+    request.headers.addAll(headers);
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      String jsonResponse = await response.stream.bytesToString();
+      Map<String, dynamic> tags = jsonDecode(jsonResponse);
+
+      activityTags.addAll(
+          tags["docs"].map((tag) => tag["_id"].toString()).cast<String>());
+    } else {
+      print(response.reasonPhrase);
+    }
+    return activityTags;
+  }
+
+  //Get all tags
+  Future<List<String>> getActionTags() async {
+    List<String> actionsTags = [];
+    var headers = {'Authorization': widget.globals.deviceToken};
+    var request = http.Request(
+        'GET',
+        Uri.parse('https://students.measurify.org/v1/tags?filter={"tags": "' +
+            _selectedOption1 +
+            '"}&sort={ "timestamp": "asc" }'));
+
+    request.headers.addAll(headers);
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      String jsonResponse = await response.stream.bytesToString();
+      // Assuming the response is a JSON array of tags like ["Tag1", "Tag2", ...]
+      Map<String, dynamic> tags = jsonDecode(jsonResponse);
+      // Convert each tag to a string and add it to the activityTags list
+      actionsTags.addAll(
+          tags["docs"].map((tag) => tag["_id"].toString()).cast<String>());
+    } else {
+      print(response.reasonPhrase);
+    }
+    return actionsTags;
   }
 
   @override
@@ -212,10 +294,62 @@ class _startPageState extends State<startPage> {
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-             Text(
-              'Insert name of the measurement:',
+            // First DropdownButton
+            Text(
+              'Choose Activity:',
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            DropdownButton<String>(
+              value: _selectedOption1.isNotEmpty ? _selectedOption1 : "",
+              onChanged: (String? newValue) async {
+                setState(() {
+                  _selectedOption1 = newValue!;
+                });
+                List<String> tags2 = await getActionTags();
+                setState(() {
+                  // Update the sportsList with the fetched tags
+                  actionsList = tags2;
+                  _selectedOption2 = actionsList[0];
+                });
+              },
+              items: sportsList.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 16.0),
+            // Second DropdownButton
+            Text(
+              'Choose Action:',
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            DropdownButton<String>(
+              value: _selectedOption2.isNotEmpty ? _selectedOption2 : "",
+              onChanged: (String? newValue2) {
+                setState(() {
+                  _selectedOption2 = newValue2!;
+                });
+              },
+              items: actionsList.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 16.0),
+            Text(
+              'Insert name of the measurement [Optional]:',
               style: TextStyle(
                 fontSize: 16.0,
                 fontWeight: FontWeight.bold,
@@ -235,7 +369,7 @@ class _startPageState extends State<startPage> {
               onSubmitted: (value) {
                 widget.globals.prefs
                     .setString('measureName', widget.globals.measureName);
-                  print("saved measureName on sharedPreferences");
+                print("saved measureName on sharedPreferences");
               },
             ),
             SizedBox(height: 16.0),
@@ -279,35 +413,43 @@ class _startPageState extends State<startPage> {
             ),
             SizedBox(height: 16.0),
             ElevatedButton(
-              onPressed: () {
-                if (widget.globals.measureName == '') {
+              onPressed: () async {
+                if (!widget.globals.option1 &&
+                    !widget.globals.option2 &&
+                    !widget.globals.option3) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Select a name for the measurement!')),
+                    SnackBar(content: Text('Select at least on option!')),
                   );
                 } else {
-                  toggleCollecting();
-                  // Handle button press                  
-                  if (widget.globals.option1) {
-                    if (widget.globals.isCollecting) {
-                      //create the measurement and start notification
-                      checkMeasureExist();
-                      QuickBlue.setNotifiable(
-                        widget.globals.deviceId,
-                        widget.globals.bleServiceId,
-                        widget.globals.imuCharacteristicId,
-                        BleInputProperty.notification,
-                      );
-                    } else {
-                      //stop notification and send data
-                      QuickBlue.setNotifiable(
-                        widget.globals.deviceId,
-                        widget.globals.bleServiceId,
-                        widget.globals.imuCharacteristicId,
-                        BleInputProperty.disabled,
-                      );
-                      //send data (WORKS ONLY FOR IMU)
-                      sendData(); 
-                    }                    
+                  if (_selectedOption1 == "" || _selectedOption2 == "") {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Activity and Action can't be empty, please check that tags are in the database")),
+                  );
+                  } else {
+                    toggleCollecting();
+                    // Handle button press
+                    if (widget.globals.option1) {
+                      if (widget.globals.isCollecting) {
+                        //create the measurement and start notification
+                        await checkMeasureExist();
+                        QuickBlue.setNotifiable(
+                          widget.globals.deviceId,
+                          widget.globals.bleServiceId,
+                          widget.globals.imuCharacteristicId,
+                          BleInputProperty.notification,
+                        );
+                      } else {
+                        //stop notification and send data
+                        QuickBlue.setNotifiable(
+                          widget.globals.deviceId,
+                          widget.globals.bleServiceId,
+                          widget.globals.imuCharacteristicId,
+                          BleInputProperty.disabled,
+                        );
+                        //send data (WORKS ONLY FOR IMU)
+                        sendData();
+                      }
+                    }
                   }
                 }
               },
@@ -325,55 +467,78 @@ class _startPageState extends State<startPage> {
   }
 
   //Check if exist a measure with that name //TO DO if exist check that the feature is the same of option selected
-  void checkMeasureExist() async{
-    var headers = {
-      'Content-Type': 'application/json',
-      'Authorization': widget.globals.deviceToken
-    };
-    var request = http.Request('GET', Uri.parse(widget.globals.url+widget.globals.measureName));    
-    request.headers.addAll(headers);
+  Future<void> checkMeasureExist() async {
+    if (widget.globals.measureName == '') {
+      //postMeasure without id
+      await postMeasure();
+    } else {
+      var headers = {
+        'Content-Type': 'application/json',
+        'Authorization': widget.globals.deviceToken
+      };
+      var request = http.Request(
+          'GET',
+          Uri.parse(widget.globals.url +
+              "measurements/" +
+              widget.globals.measureName));
+      request.headers.addAll(headers);
 
-    http.StreamedResponse response = await request.send();
+      http.StreamedResponse response = await request.send();
 
-    if (response.statusCode == 200) {
-      print(await response.stream.bytesToString());
-    }
-    else {
-      print(response.reasonPhrase); 
-      //Create it //MAYBE MANAGE BETTER ERRORS.   
-      postMeasure();
+      if (response.statusCode == 200) {
+        print(await response.stream.bytesToString());
+      } else {
+        print(response.reasonPhrase);
+        //Create it //MAYBE MANAGE BETTER ERRORS.
+        await postMeasure();
+      }
     }
   }
 
   //Create measurement to save data
-  void postMeasure() async{
+  Future<void> postMeasure() async {
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': widget.globals.deviceToken
     };
-    var request = http.Request('POST', Uri.parse(widget.globals.url));
-    request.body = json.encode({
-      "_id": widget.globals.measureName,
-      "thing":widget.globals.thingName,
+    var request =
+        http.Request('POST', Uri.parse(widget.globals.url + "measurements"));
+    // Prepare the data to be sent in the request body as a Map
+    Map<String, dynamic> requestBody = {
+      "thing": widget.globals.thingName,
       "feature": "IMU",
       "device": widget.globals.deviceName,
-      "tags": ["IMU"],
+      "tags": [_selectedOption1, _selectedOption2],
       "visibility": "public"
-    });
+    };
+
+    if (widget.globals.measureName != '' &&
+        widget.globals.measureName.isNotEmpty) {
+      // If the measureName is available, include it in the request body
+      requestBody["_id"] = widget.globals.measureName;
+    }
+
+    // JSON encode the data in the request body
+    String requestBodyJson = json.encode(requestBody);
+    request.body = requestBodyJson;
     request.headers.addAll(headers);
 
     http.StreamedResponse response = await request.send();
-
     if (response.statusCode == 200) {
-      print(await response.stream.bytesToString());
-    }
-    else {
+      String jsonResponse = await response.stream.bytesToString();
+      print(jsonResponse);
+      // Assuming the response is a JSON array of tags like ["Tag1", "Tag2", ...]
+      Map<String, dynamic> measure = jsonDecode(jsonResponse);
+      // Convert each tag to a string and add it to the activityTags list
+      widget.globals.measureName = measure["_id"].toString();
+    } else {
+      print(request);
       print(response.toString());
       final snackBar = SnackBar(
         content: Text(response.reasonPhrase!),
       );
 
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
   }
 }
