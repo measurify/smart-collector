@@ -226,7 +226,7 @@ class _startPageState extends State<startPage> {
     var request = http.Request(
         'GET',
         Uri.parse(
-            'https://students.measurify.org/v1/tags?filter={"tags": "Activity"}&sort={ "timestamp": "asc" }'));
+            widget.globals.url+'tags?filter={"tags": "Activity"}&sort={ "timestamp": "asc" }'));
 
     request.headers.addAll(headers);
 
@@ -250,7 +250,7 @@ class _startPageState extends State<startPage> {
     var headers = {'Authorization': widget.globals.deviceToken};
     var request = http.Request(
         'GET',
-        Uri.parse('https://students.measurify.org/v1/tags?filter={"tags": "' +
+        Uri.parse(widget.globals.url+'tags?filter={"tags": "' +
             _selectedOption1 +
             '"}&sort={ "timestamp": "asc" }'));
 
