@@ -5,21 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "quick_blue_example",
-            "cwd": "quick_blue_example",
+            "name": "smart_collector",
+            "cwd": "smart_collector",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "quick_blue_example (profile mode)",
-            "cwd": "quick_blue_example",
+            "name": "smart_collector (profile mode)",
+            "cwd": "smart_collector",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "quick_blue_example (release mode)",
-            "cwd": "quick_blue_example",
+            "name": "smart_collector (release mode)",
+            "cwd": "smart_collector",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
