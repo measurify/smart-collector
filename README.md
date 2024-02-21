@@ -1,69 +1,68 @@
-# quick_blue
+Smart Collector
+=================
+### Table of contents
+- [Overview](https://github.com/Activity-Tracker-Framework/smart-collector#overview)
+- [Getting Started](https://github.com/Activity-Tracker-Framework/smart-collector#getting-started)
+- [Installation](https://github.com/Activity-Tracker-Framework/smart-collector#installation)    
+    - [For Personal device](https://github.com/Activity-Tracker-Framework/smart-collector#for-personal-device)    
+- [Usage](https://github.com/Activity-Tracker-Framework/smart-collector#Usage)
+    
+## Overview
+# Smart Collector
 
-A cross-platform (Android/iOS/macOS/Windows/Linux) BluetoothLE plugin for Flutter
+Smart Collector is part of the Activity Tracker Framework, designed to efficiently collect and manage data from various sources for activity tracking purposes. It aims to provide a flexible and scalable solution for gathering, processing, and storing activity data, making it easier for developers to implement comprehensive activity tracking in their applications.
 
-> **Note:** It is a [federated plugin](https://docs.flutter.dev/development/packages-and-plugins/developing-packages#federated-plugins) structure
+## Features
+
+- **Data Collection**: Collects data from edge-meter [LINK](https://github.com/Activity-Tracker-Framework/edge-meter) and collect them as timeseries.
+- **End-to-End**: Transmits data from the edge device to the cloud of Measurify [LINK](https://github.com/measurify/server).
+- **Security**: Implements best practices to ensure data is collected, processed, and stored securely.
+- **Multi-Platform Support:** Collect data from multiple sources with ease.
+- **Real-Time Processing:** Process data in real-time to gain immediate insights.
+
+## Getting Started
+
+### Prerequisites
+
+- Visual Studio Code installed
+- Flutter installed correctly (check with "flutter doctor -v")
+- Measurify Cloud server [LINK](https://github.com/measurify/server)
+- Arduino Nano 33 BLE / Arduino Nano 33 BLE Sense 
+- Edge-Meter firmware [LINK](https://github.com/Activity-Tracker-Framework/edge-meter)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Activity-Tracker-Framework/smart-collector.git
+
+2. Open in VS Code the directory smart_collector:
+
+3. Run flutter pub get
+```
+flutter pub get
+```
+
+4. set the parameters in default.dart
+
+5. Run the code
+
+    #### For Personal device
+
+    Activate Developer Options. Firstly, launch the app and click the "Request Permissions" button at the bottom of the initial page. Tap on this button to grant the app permissions for using Bluetooth Low Energy (BLE) and to discover devices.    
 
 ## Usage
 
-- [Scan BLE peripheral](quick_blue/README.md#scan-ble-peripheral)
-- [Connect BLE peripheral](quick_blue/README.md#connect-ble-peripheral)
-- [Discover services of BLE peripheral](quick_blue/README.md#discover-services-of-ble-peripheral)
-- [Transfer data between BLE central & peripheral](quick_blue/README.md#transfer-data-between-ble-central--peripheral)
+### Application
+The application consists of a first page where you choose the device of interest Edge-Meter. Followed by a page to connect to the device and continue. The StartPage allows you to select the activity performed and the actions to be collected and start and stop sampling. 
 
-## General useful Bluetooth information
+### Code
+The code can be found inside smart_collector/lib/ and consists of:
 
-https://www.bluetooth.com/blog/4-essential-tools-for-every-bluetooth-low-energy-developer/
-
-1. Client Emulator Apps
-
-    * LightBlue app ([iOS](https://itunes.apple.com/us/app/lightblue-explorer-bluetooth/id557428110), [macOS](https://apps.apple.com/us/app/lightblue/id557428110))
-    * Nordic nRF Connect app ([iOS](https://itunes.apple.com/us/app/nrf-connect/id1054362403), [Android](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp&hl=en), [Desktop](https://www.nordicsemi.com/eng/Products/Bluetooth-low-energy/nRF-Connect-for-desktop))
-
-2. Bluetooth Sniffer
-
-    * High-end/commercial: [Ellisys sniffers](http://www.ellisys.com/products/btcompare.php), [Teledyne LeCroy](http://teledynelecroy.com/frontline/) sniffers (formerly Frontline), the [Spanalytics PANalyzr](https://www.spanalytics.com/panalyzr)
-    * Low-cost: [TI CC2540 USB dongle sniffer](http://www.ti.com/tool/CC2540EMK-USB), [Nordic nRF sniffer](https://www.nordicsemi.com/Software-and-tools/Development-Tools/nRF-Sniffer-for-Bluetooth-LE), [Ubertooth One](http://ubertooth.sourceforge.net/hardware/one/)
-
-
-### iOS/macOS specific info
-On iOS/macOS some common service/characteristic would be shortened. Be careful when comparing the UUID. I haven't finished the refactor of `notepad_core` to `quick_blue` yet
-
-On the Dart side you'd better call like: https://github.com/woodemi/notepad_core/blob/b0e329f3d6e02f14f8a0e5e48a6ddb48e026b658/notepad_core/lib/woodemi/WoodemiClient.dart#L245-L256
-
-```dart
-const CODE__SERV_BATTERY = "180f";
-const CODE__CHAR_BATTERY_LEVEL = "2a19";
-
-const SERV__BATTERY = "0000$CODE__SERV_BATTERY-$GSS_SUFFIX";
-const CHAR__BATTERY_LEVEL = "0000$CODE__CHAR_BATTERY_LEVEL-$GSS_SUFFIX";
-```
-
-Common service/characteristic list
-
-* Official: https://www.bluetooth.com/specifications/specs/gatt-specification-supplement-5/
-* gist: https://gist.github.com/sam016/4abe921b5a9ee27f67b3686910293026
-
-
-### Windows specific info
-
-Doc of samples: https://docs.microsoft.com/en-us/samples/microsoft/windows-universal-samples/bluetoothle
-Code of samples: https://github.com/microsoft/windows-universal-samples/tree/main/Samples/BluetoothLE
-
-Some other help
-
-* [Nordic Semiconductor](https://www.nordicsemi.com/): [Dev Zone](https://devzone.nordicsemi.com/), e.g. [this post](https://devzone.nordicsemi.com/f/nordic-q-a/48916/bluetooth-le-windows-10-using-winrt-c-code-works-if-device-not-paired-fails-with-unreachable-if-device-is-paired)
-* LightBlue: [Windows tool](https://windowsden.uk/557428110/lightblue), [Docs](https://punchthrough.com/lightblue-features/)
-
-There is a version restriction with `Connection without pairing` on `C++/WinRT` and Windows 10
-
-* https://answers.microsoft.com/en-us/windows/forum/all/reconnecting-a-paired-bluetooth-device-without/90b42dd3-2998-4393-9d89-1624e120502f
-* https://stackoverflow.com/questions/55765090/windows-bluetooth-le-require-pairing-before-connection
-* https://social.msdn.microsoft.com/Forums/azure/en-US/66d6fb43-e41e-4751-99fe-170b8f63ad22/uwpcc-uwp-bluetooth-communication-without-pairing?forum=wpdevelop
-
-### Linux specific info
-
-- BlueZ official: http://www.bluez.org/
-- Ubuntu official: https://ubuntu.com/core/docs/bluez
-- Ubuntu `bluez` package: https://github.com/canonical/bluez.dart
-- Doc of samples: https://www.bluetooth.com/wp-content/uploads/2019/03/T1804_How-to-set-up-BlueZ_LFC_FINAL-2.pdf
+- default.dart: All important application settings for communication
+- globals.dart: All settings declaration
+- main.dart: First page with the selection of the device
+- PeripheralDetailPage.dart: Page to connect to the device
+- CharacteristicDetailPage.dart: NO MORE USED Command for BLE communication
+- startPage.dart: Page to set labels for activity, actions, measurement name, and select IMU, ORI, ENV data and start/stop recording
+- configPage.dart: To change settings from the app. Changes should need a restart of the app.
