@@ -169,7 +169,7 @@ class _startPageState extends State<startPage> {
             jsonObj["values"][6].toDouble(),
             jsonObj["values"][7].toDouble(),
             jsonObj["values"][8].toDouble()));
-        if (chartDataIMUList.length > 30) {
+        if (chartDataIMUList.length > 20) {
           chartDataIMUList.removeAt(0);
         }
       });
