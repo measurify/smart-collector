@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'configPage.dart';
 import 'globals.dart';
 import 'default.dart';
+import 'chartCartesianPage.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 class startPage extends StatefulWidget {
   final Globals globals;
@@ -17,16 +19,34 @@ class startPage extends StatefulWidget {
   _startPageState createState() => _startPageState();
 }
 
+class ChartDataIMU {
+  final String timestamp;
+  final double accX;
+  final double accY;
+  final double accZ;
+  final double gyrX;
+  final double gyrY;
+  final double gyrZ;
+  final double magX;
+  final double magY;
+  final double magZ;
+
+  ChartDataIMU(this.timestamp, this.accX, this.accY, this.accZ, this.gyrX,
+      this.gyrY, this.gyrZ, this.magX, this.magY, this.magZ);
+}
+
 class _startPageState extends State<startPage> {
   //Create an object of type Defaults that contains default configuration values
   Defaults defaults = Defaults();
 
   List<String> sportsList = [];
   List<String> actionsList = [];
+  late List<ChartDataIMU> chartDataIMUList = [];
 
   String _selectedOption1 = "";
   String _selectedOption2 = "";
 
+  bool isCollecting = false; // variable to control visibility
   //Input controller for Name of the measurement
   TextEditingController _measureNameController = TextEditingController();
 
@@ -35,6 +55,7 @@ class _startPageState extends State<startPage> {
     super.initState();
     // Load configuration variables from SharedPreferences
     loadConfigVariables();
+    chartDataIMUList = [];
 
     // Call the function to get tags
     fetchTags();
@@ -135,6 +156,22 @@ class _startPageState extends State<startPage> {
       setState(() {
         // Add the parsed data to the receivedValues list of the specific characteristic
         widget.globals.receivedIMUJsonValues.add(jsonObj);
+        //if chartdataimulist >30 elements pop the first element
+
+        chartDataIMUList.add(ChartDataIMU(
+            (widget.globals.savedValue+1).toString(),
+            jsonObj["values"][0].toDouble(),
+            jsonObj["values"][1].toDouble(),
+            jsonObj["values"][2].toDouble(),
+            jsonObj["values"][3].toDouble(),
+            jsonObj["values"][4].toDouble(),
+            jsonObj["values"][5].toDouble(),
+            jsonObj["values"][6].toDouble(),
+            jsonObj["values"][7].toDouble(),
+            jsonObj["values"][8].toDouble()));
+        if (chartDataIMUList.length > 30) {
+          chartDataIMUList.removeAt(0);
+        }
       });
     }
     //MISSING ENV AND ORIENTATION CHARACTERISTICS
@@ -181,6 +218,7 @@ class _startPageState extends State<startPage> {
   void toggleCollecting() {
     setState(() {
       widget.globals.isCollecting = !widget.globals.isCollecting;
+      isCollecting = !isCollecting;
     });
   }
 
@@ -225,8 +263,8 @@ class _startPageState extends State<startPage> {
     var headers = {'Authorization': widget.globals.deviceToken};
     var request = http.Request(
         'GET',
-        Uri.parse(
-            widget.globals.url+'tags?filter={"tags": "Activity"}&sort={ "timestamp": "asc" }'));
+        Uri.parse(widget.globals.url +
+            'tags?filter={"tags": "Activity"}&sort={ "timestamp": "asc" }'));
 
     request.headers.addAll(headers);
 
@@ -250,7 +288,8 @@ class _startPageState extends State<startPage> {
     var headers = {'Authorization': widget.globals.deviceToken};
     var request = http.Request(
         'GET',
-        Uri.parse(widget.globals.url+'tags?filter={"tags": "' +
+        Uri.parse(widget.globals.url +
+            'tags?filter={"tags": "' +
             _selectedOption1 +
             '"}&sort={ "timestamp": "asc" }'));
 
@@ -293,9 +332,9 @@ class _startPageState extends State<startPage> {
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          if (!isCollecting) ...[
             // First DropdownButton
             Text(
               'Choose Activity:',
@@ -422,14 +461,17 @@ class _startPageState extends State<startPage> {
                   );
                 } else {
                   if (_selectedOption1 == "" || _selectedOption2 == "") {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Activity and Action can't be empty, please check that tags are in the database")),
-                  );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              "Activity and Action can't be empty, please check that tags are in the database")),
+                    );
                   } else {
-                    toggleCollecting();
+                    toggleCollecting(); // when Start is pressed, isCollecting is true
                     // Handle button press
                     if (widget.globals.option1) {
                       if (widget.globals.isCollecting) {
+                        chartDataIMUList = [];
                         //create the measurement and start notification
                         await checkMeasureExist();
                         QuickBlue.setNotifiable(
@@ -438,26 +480,85 @@ class _startPageState extends State<startPage> {
                           widget.globals.imuCharacteristicId,
                           BleInputProperty.notification,
                         );
-                      } else {
-                        //stop notification and send data
-                        QuickBlue.setNotifiable(
-                          widget.globals.deviceId,
-                          widget.globals.bleServiceId,
-                          widget.globals.imuCharacteristicId,
-                          BleInputProperty.disabled,
-                        );
-                        //send data (WORKS ONLY FOR IMU)
-                        sendData();
                       }
                     }
                   }
                 }
               },
-              child: Text(
-                  !widget.globals.isCollecting ? 'Start' : 'Stop and Send'),
+              child: Text('Start'),
+            ),
+            Row(
+              // Go to the chartCartesian page trasmitting globals
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            chartCartesianPage(globals: widget.globals),
+                      ),
+                    );
+                  },
+                  child: Text('Go to chart page'),
+                ),
+              ],
             ),
           ],
-        ),
+          if (isCollecting) ...[
+            Text(
+              'Choose Action:',
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            DropdownButton<String>(
+              value: _selectedOption2.isNotEmpty ? _selectedOption2 : "",
+              onChanged: (String? newValue2) {
+                setState(() {
+                  _selectedOption2 = newValue2!;
+                });
+              },
+              items: actionsList.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 16.0),
+            ElevatedButton(
+              onPressed: () {
+                toggleCollecting(); // When Stop is pressed, brings everything back visible
+                if (widget.globals.option1) {
+                  //stop notification and send data
+                  QuickBlue.setNotifiable(
+                    widget.globals.deviceId,
+                    widget.globals.bleServiceId,
+                    widget.globals.imuCharacteristicId,
+                    BleInputProperty.disabled,
+                  );
+                  //send data (WORKS ONLY FOR IMU)
+                  sendData();
+                }
+              },
+              child: Text('Stop and Send'),
+            ),
+            // Use Expanded widget to make the chart take up all available remaining space
+            Expanded(
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    // Wrap the chart call with Expanded
+                    child: _buildDefaultLineChart(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ]),
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.all(16.0),
@@ -540,5 +641,94 @@ class _startPageState extends State<startPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
+  }
+
+  /// Get the cartesian chart with default line series
+  SfCartesianChart _buildDefaultLineChart() {
+    return SfCartesianChart(
+      plotAreaBorderWidth: 0,
+      title: ChartTitle(text: 'Time Series'),
+      legend:
+          Legend(isVisible: true, overflowMode: LegendItemOverflowMode.wrap),
+      primaryXAxis: CategoryAxis(interval: 2, labelRotation: 80),
+      /*const NumericAxis(
+                    edgeLabelPlacement: EdgeLabelPlacement.shift,
+                    interval: 2,
+                    majorGridLines: MajorGridLines(width: 0)),*/
+      primaryYAxis: NumericAxis(
+          labelFormat: '{value}',
+          axisLine: AxisLine(width: 0),
+          majorTickLines: MajorTickLines(color: Colors.transparent)),
+      series: _getDefaultLineSeries(),
+      tooltipBehavior: TooltipBehavior(enable: true),
+    );
+  }
+
+  /// The method returns line series to chart.
+  List<LineSeries<dynamic, dynamic>> _getDefaultLineSeries() {
+    return <LineSeries<dynamic, dynamic>>[
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.accX,
+        name: 'accX',
+        /*markerSettings: const MarkerSettings(isVisible: true)*/
+      ),
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        name: 'accY',
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.accY,
+        /*markerSettings: const MarkerSettings(isVisible: true)*/
+      ),
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.accZ,
+        name: 'accZ',
+        /*markerSettings: const MarkerSettings(isVisible: true)*/
+      ),
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.gyrX,
+        name: 'gyrX',
+        /*markerSettings: const MarkerSettings(isVisible: true)*/
+      ),
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.gyrY,
+        name: 'gyrY',
+        /*markerSettings: const MarkerSettings(isVisible: true)*/
+      ),
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.gyrZ,
+        name: 'gyrZ',
+        /*markerSettings: const MarkerSettings(isVisible: true)*/
+      ),
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.magX,
+        name: 'magX',
+        /*markerSettings: const MarkerSettings(isVisible: true)*/
+      ),
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.magY,
+        name: 'magY',
+        /*markerSettings: const MarkerSettings(isVisible: true)*/
+      ),
+      LineSeries<ChartDataIMU, String>(
+        dataSource: chartDataIMUList,
+        xValueMapper: (ChartDataIMU sales, _) => sales.timestamp,
+        yValueMapper: (ChartDataIMU sales, _) => sales.magZ,
+        name: 'magZ', /*markerSettings: const MarkerSettings(isVisible: true)*/
+      )
+    ];
   }
 }

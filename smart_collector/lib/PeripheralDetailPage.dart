@@ -35,6 +35,8 @@ class PeripheralDetailPage extends StatefulWidget {
 class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
   //create here an object of type globals that contains all the variables and need to be exchanged between pages
   Globals globals=Globals();
+  bool isConnected = false; //is connected
+  bool connecting = false; //connect
 
   @override
   void initState() {
@@ -105,14 +107,25 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
             children: <Widget>[
               ElevatedButton(
                 child: Text('connect'),
-                onPressed: () {
+                onPressed: connecting ? null : () {
+                  setState(() {
+                    connecting = true;
+                  });
                   QuickBlue.connect(widget.deviceId);
+                  Future.delayed(Duration(seconds: 2), () {
+                    setState(() {
+                      isConnected = true;
+                    });
+                  });
                 },
               ),
               ElevatedButton(
                 child: Text('disconnect'),
                 onPressed: () {
                   QuickBlue.disconnect(widget.deviceId);
+                  setState(() {
+                    isConnected = false;
+                  });
                 },
               ),
             ],
@@ -122,15 +135,15 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
             children: <Widget>[
               ElevatedButton(
                 child: Text('Go to uploading page'),
-                onPressed: () {
+                onPressed: isConnected ? () {
                   QuickBlue.discoverServices(globals.deviceId);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => startPage(globals:globals),
-                    ),
+                      builder: (context) => startPage(globals: globals),
+                    ),  
                   );
-                },
+                } : null,
               ),
             ],
           ),

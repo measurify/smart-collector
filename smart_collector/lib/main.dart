@@ -98,6 +98,7 @@ class _MyAppState extends State<MyApp> {
               Text('${_scanResults[index].name}(${_scanResults[index].rssi})'),
           subtitle: Text(_scanResults[index].deviceId),
           onTap: () {
+            QuickBlue.stopScan(); //stop scan when you click on the device
             Navigator.push(
                 context,
                 MaterialPageRoute(
